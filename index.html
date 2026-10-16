@@ -2,155 +2,252 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo de Productos</title>
+  <!-- Configuración crucial para celulares -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Catálogo Digital</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f4f6f9; color: #333; padding: 20px; }
-    header { text-align: center; margin-bottom: 30px; }
-    header h1 { color: #1a252f; font-size: 2rem; margin-bottom: 8px; }
-    
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+    :root {
+      --wa-green: #25d366;
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-sub: #6b7280;
     }
-    
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 30px; }
+
+    header {
+      background: #111827;
+      color: #fff;
+      text-align: center;
+      padding: 18px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.3rem; font-weight: 700; }
+    header p { font-size: 0.8rem; color: #9ca3af; margin-top: 2px; }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    /* Diseño en celulares: 2 columnas compactas */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (min-width: 600px) {
+      .catalog-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+      }
+    }
+
     .card {
-      background: #fff;
+      background: var(--card-bg);
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.2s ease;
+      border: 1px solid #e5e7eb;
     }
-    .card:hover { transform: translateY(-4px); }
-    
-    .card img {
+
+    .card-img-wrap {
       width: 100%;
-      height: 180px;
+      height: 120px;
+      background-color: #f3f4f6;
+      position: relative;
+    }
+
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      background-color: #eee;
     }
-    
-    .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
-    .card-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
-    .card-desc { font-size: 0.9rem; color: #666; margin-bottom: 12px; flex-grow: 1; }
-    .card-price { font-size: 1.3rem; font-weight: bold; color: #27ae60; margin-bottom: 12px; }
-    
-    .btn-buy {
-      display: block;
-      width: 100%;
+
+    .card-body {
       padding: 10px;
-      background-color: #25d366;
-      color: white;
-      text-align: center;
-      text-decoration: none;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
     }
-    .btn-buy:hover { background-color: #1eb954; }
-    .btn-disabled { background-color: #ccc; cursor: not-allowed; }
-    
-    #loading { text-align: center; font-size: 1.2rem; padding: 40px; color: #777; }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      color: var(--text-main);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-price {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #059669;
+      margin-top: auto;
+      margin-bottom: 8px;
+    }
+
+    .btn-wa {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      padding: 8px 4px;
+      background-color: var(--wa-green);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(37,211,102,0.25);
+    }
+    .btn-wa:active { opacity: 0.85; transform: scale(0.98); }
+
+    .btn-off {
+      background-color: #d1d5db;
+      color: #6b7280;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #loading {
+      text-align: center;
+      padding: 50px 20px;
+      font-size: 0.95rem;
+      color: var(--text-sub);
+    }
   </style>
 </head>
 <body>
 
   <header>
     <h1>Catálogo de Productos</h1>
-    <p>Selecciona tus productos y realiza tu pedido fácilmente</p>
+    <p>Haz clic en pedir para enviar por WhatsApp</p>
   </header>
 
-  <div id="loading">Cargando productos...</div>
-  <div class="grid-container" id="catalogo"></div>
+  <div class="container">
+    <div id="loading">Cargando productos...</div>
+    <div class="catalog-grid" id="catalogo"></div>
+  </div>
 
   <script>
-    // 1. REEMPLAZA ESTA URL CON TU ENLACE PUBLICADO COMO CSV DE GOOGLE SHEETS
+    // Tu enlace público en CSV
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrk4syopqM0OsDN6yXMRH2c67rINhlf8H4jXXXqFcq1z7Fb5dX8XdxJKKKP6aKZX5X8Cjo9BpkhMJ0/pub?output=csv";
+    
+    // Ingresa tu número de WhatsApp
+    const NUMERO_WA = "5491112345678"; 
 
-    // Número de WhatsApp para recibir pedidos (con código de país)
-    const WHATSAPP_NUMERO = "5491172680871"; 
-
-    // Función para convertir texto CSV en un arreglo de objetos Javascript
-    function csvToJson(csvText) {
-      const lineas = csvText.trim().split("\n");
-      if (lineas.length < 2) return [];
-
-      const cabeceras = lineas[0].split(",").map(c => c.trim().toLowerCase().replace(/"/g, ''));
-      const productos = [];
-
-      for (let i = 1; i < lineas.length; i++) {
-        // Maneja separadores por comas
-        const valores = lineas[i].split(",").map(v => v.trim().replace(/"/g, ''));
-        if (valores.length === cabeceras.length) {
-          let obj = {};
-          cabeceras.forEach((cab, idx) => {
-            obj[cab] = valores[idx];
-          });
-          productos.push(obj);
-        }
+    // Convierte enlaces de Google Drive compartidos a imágenes visibles directamente
+    function fijarUrlDrive(url) {
+      if (!url) return '';
+      if (url.includes('drive.google.com/file/d/')) {
+        const id = url.split('/d/')[1].split('/')[0];
+        return `https://lh3.googleusercontent.com/d/${id}`;
       }
-      return productos;
+      return url;
     }
 
-    // Cargar y procesar los datos
     async function cargarCatalogo() {
-      const contenedor = document.getElementById('catalogo');
       const loader = document.getElementById('loading');
+      const contenedor = document.getElementById('catalogo');
 
       try {
-        const respuesta = await fetch(URL_CSV);
-        const datosCsv = await respuesta.text();
-        const productos = csvToJson(datosCsv);
+        const res = await fetch(URL_CSV + '&nocache=' + Date.now());
+        const text = await res.text();
+
+        // Limpiar las filas del CSV
+        const lineas = text.split(/\r?\n/);
+        if (lineas.length < 2) {
+          loader.innerText = "La planilla no contiene datos válidos.";
+          return;
+        }
+
+        let listaProductos = [];
+
+        // Extraer texto crudo ignorando encabezados
+        const contenido = text.substring(text.indexOf('\n') + 1);
+
+        // Separar si los productos vienen por saltos de línea (como la celda A2) o por filas del CSV
+        const itemsRaw = contenido.split(/\r?\n/);
+
+        itemsRaw.forEach(itemStr => {
+          // Si el renglón trae comas, separar por comas o limpiar comillas
+          let limpia = itemStr.replace(/^"|"$/g, '').trim();
+          if (!limpia || limpia.startsWith('Total') || limpia.startsWith('Monto')) return;
+
+          // Extraer nombre y precio con expresión regular
+          // Busca patrones como "$7.990", "7.990", "$15.000", etc.
+          const matchPrecio = limpia.match(/\$?(\d{1,3}(?:\.\d{3})+|\d+)/);
+          
+          let precio = "0";
+          let nombre = limpia;
+
+          if (matchPrecio) {
+            precio = matchPrecio[0];
+            // Remover el precio del nombre del producto
+            nombre = limpia.replace(matchPrecio[0], '').replace(/[-–$]/g, '').trim();
+          }
+
+          // Si hay enlace de imagen en la línea
+          const matchUrl = limpia.match(/https?:\/\/[^\s,]+/);
+          let imgUrl = matchUrl ? matchUrl[0] : '';
+
+          if (nombre) {
+            listaProductos.push({
+              nombre: nombre,
+              precio: precio,
+              imagen: fijarUrlDrive(imgUrl)
+            });
+          }
+        });
 
         loader.style.display = 'none';
         contenedor.innerHTML = '';
 
-        productos.forEach(prod => {
-          const disponible = (prod.disponible || 'si').toLowerCase().trim() === 'si';
-          
+        listaProductos.forEach(p => {
           const card = document.createElement('div');
           card.className = 'card';
 
-          const imagenUrl = prod.imagen || 'https://via.placeholder.com/300x200?text=Producto';
-          const precioFormateado = Number(prod.precio || 0).toLocaleString('es-AR');
-
-          // Mensaje predeterminado para WhatsApp
-          const msjWhatsapp = encodeURIComponent(`Hola! Quisiera comprar el producto: ${prod.producto} - $${precioFormateado}`);
-          const urlWa = `https://wa.me/${WHATSAPP_NUMERO}?text=${msjWhatsapp}`;
+          const imagenSrc = p.imagen || 'https://via.placeholder.com/200x150?text=Producto';
+          const msjWa = encodeURIComponent(`Hola, quisiera consultar/comprar: ${p.nombre} (${p.precio})`);
+          const linkWa = `https://wa.me/${NUMERO_WA}?text=${msjWa}`;
 
           card.innerHTML = `
-            <img src="${imagenUrl}" alt="${prod.producto}">
+            <div class="card-img-wrap">
+              <img src="${imagenSrc}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/200x150?text=Sin+Foto'">
+            </div>
             <div class="card-body">
-              <div class="card-title">${prod.producto || 'Sin nombre'}</div>
-              <div class="card-desc">${prod.descripcion || ''}</div>
-              <div class="card-price">$${precioFormateado}</div>
-              ${
-                disponible 
-                ? `<a href="${urlWa}" target="_blank" class="btn-buy">Comprar por WhatsApp</a>`
-                : `<button class="btn-buy btn-disabled" disabled>Agotado</button>`
-              }
+              <div class="card-title">${p.nombre}</div>
+              <div class="card-price">${p.precio.startsWith('$') ? p.precio : '$' + p.precio}</div>
+              <a href="${linkWa}" target="_blank" class="btn-wa">Pedir por WA</a>
             </div>
           `;
 
           contenedor.appendChild(card);
         });
 
-      } catch (error) {
-        console.error('Error al cargar la hoja de datos:', error);
-        loader.innerHTML = 'Error al cargar los productos. Revisa la URL del CSV.';
+      } catch (err) {
+        console.error(err);
+        loader.innerText = "Error cargando la lista. Verifica la publicación del CSV.";
       }
     }
 
-    // Inicializar
     cargarCatalogo();
   </script>
 </body>
