@@ -1,97 +1,157 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Página de Bienvenida</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .welcome-card {
-            background-color: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        .welcome-card h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.75rem;
-            color: var(--text-main);
-        }
-
-        .welcome-card p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: var(--primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            font-weight: 600;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-
-        .btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(15px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Productos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; color: #333; padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; }
+    header h1 { color: #1a252f; font-size: 2rem; margin-bottom: 8px; }
+    
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease;
+    }
+    .card:hover { transform: translateY(-4px); }
+    
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background-color: #eee;
+    }
+    
+    .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+    .card-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
+    .card-desc { font-size: 0.9rem; color: #666; margin-bottom: 12px; flex-grow: 1; }
+    .card-price { font-size: 1.3rem; font-weight: bold; color: #27ae60; margin-bottom: 12px; }
+    
+    .btn-buy {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #25d366;
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-buy:hover { background-color: #1eb954; }
+    .btn-disabled { background-color: #ccc; cursor: not-allowed; }
+    
+    #loading { text-align: center; font-size: 1.2rem; padding: 40px; color: #777; }
+  </style>
 </head>
 <body>
 
-    <div class="welcome-card">
-        <h1>¡Bienvenido/a!prueba marcelo</h1>
-        <p>Este es un código HTML inicial de prueba. Todo está listo para que comiences a desarrollar tu proyecto.</p>
-        <a href="#" class="btn" onclick="alert('¡Hola! Botón de prueba funcionando.'); return false;">Empezar</a>
-    </div>
+  <header>
+    <h1>Catálogo de Productos</h1>
+    <p>Selecciona tus productos y realiza tu pedido fácilmente</p>
+  </header>
 
+  <div id="loading">Cargando productos...</div>
+  <div class="grid-container" id="catalogo"></div>
+
+  <script>
+    // 1. REEMPLAZA ESTA URL CON TU ENLACE PUBLICADO COMO CSV DE GOOGLE SHEETS
+    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1v.../pub?output=csv";
+
+    // Número de WhatsApp para recibir pedidos (con código de país)
+    const WHATSAPP_NUMERO = "5491112345678"; 
+
+    // Función para convertir texto CSV en un arreglo de objetos Javascript
+    function csvToJson(csvText) {
+      const lineas = csvText.trim().split("\n");
+      if (lineas.length < 2) return [];
+
+      const cabeceras = lineas[0].split(",").map(c => c.trim().toLowerCase().replace(/"/g, ''));
+      const productos = [];
+
+      for (let i = 1; i < lineas.length; i++) {
+        // Maneja separadores por comas
+        const valores = lineas[i].split(",").map(v => v.trim().replace(/"/g, ''));
+        if (valores.length === cabeceras.length) {
+          let obj = {};
+          cabeceras.forEach((cab, idx) => {
+            obj[cab] = valores[idx];
+          });
+          productos.push(obj);
+        }
+      }
+      return productos;
+    }
+
+    // Cargar y procesar los datos
+    async function cargarCatalogo() {
+      const contenedor = document.getElementById('catalogo');
+      const loader = document.getElementById('loading');
+
+      try {
+        const respuesta = await fetch(URL_CSV);
+        const datosCsv = await respuesta.text();
+        const productos = csvToJson(datosCsv);
+
+        loader.style.display = 'none';
+        contenedor.innerHTML = '';
+
+        productos.forEach(prod => {
+          const disponible = (prod.disponible || 'si').toLowerCase().trim() === 'si';
+          
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const imagenUrl = prod.imagen || 'https://via.placeholder.com/300x200?text=Producto';
+          const precioFormateado = Number(prod.precio || 0).toLocaleString('es-AR');
+
+          // Mensaje predeterminado para WhatsApp
+          const msjWhatsapp = encodeURIComponent(`Hola! Quisiera comprar el producto: ${prod.producto} - $${precioFormateado}`);
+          const urlWa = `https://wa.me/${WHATSAPP_NUMERO}?text=${msjWhatsapp}`;
+
+          card.innerHTML = `
+            <img src="${imagenUrl}" alt="${prod.producto}">
+            <div class="card-body">
+              <div class="card-title">${prod.producto || 'Sin nombre'}</div>
+              <div class="card-desc">${prod.descripcion || ''}</div>
+              <div class="card-price">$${precioFormateado}</div>
+              ${
+                disponible 
+                ? `<a href="${urlWa}" target="_blank" class="btn-buy">Comprar por WhatsApp</a>`
+                : `<button class="btn-buy btn-disabled" disabled>Agotado</button>`
+              }
+            </div>
+          `;
+
+          contenedor.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error('Error al cargar la hoja de datos:', error);
+        loader.innerHTML = 'Error al cargar los productos. Revisa la URL del CSV.';
+      }
+    }
+
+    // Inicializar
+    cargarCatalogo();
+  </script>
 </body>
 </html>
