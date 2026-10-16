@@ -35,7 +35,7 @@
       padding: 12px;
     }
 
-    /* Grilla optimizada para celulares: 2 columnas */
+    /* Grilla responsiva de 2 columnas para celulares */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -147,20 +147,18 @@
   </header>
 
   <div class="container">
-    <div id="loading">Cargando catálogo...</div>
+    <div id="loading">Cargando productos...</div>
     <div class="catalog-grid" id="catalogo"></div>
   </div>
 
   <script>
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrk4syopqM0OsDN6yXMRH2c67rINhlf8H4jXXXqFcq1z7Fb5dX8XdxJKKKP6aKZX5X8Cjo9BpkhMJ0/pub?output=csv";
-    const NUMERO_WA = "5491172680871"; // <--- Tu teléfono de WhatsApp aquí
+    const NUMERO_WA = "5491172680871"; // <--- Coloca tu número de WhatsApp aquí
 
-    // Transforma el enlace de vista previa de Google Drive a enlace de imagen directa
+    // Convertidor de links de Google Drive a URLs de imagen visibles
     function obtenerUrlImagen(url) {
       if (!url) return '';
       url = url.trim();
-      
-      // Si es un enlace de Google Drive
       if (url.includes('drive.google.com')) {
         const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
@@ -170,7 +168,7 @@
       return url;
     }
 
-    // Parser CSV tolerante a comillas y comas
+    // Parser CSV avanzado
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       if (lines.length < 2) return [];
@@ -216,7 +214,7 @@
       const contenedor = document.getElementById('catalogo');
 
       try {
-        const res = await fetch(URL_CSV + '&t=' + Date.now());
+        const res = await fetch(URL_CSV + '&nocache=' + Date.now());
         const dataText = await res.text();
         const productos = parseCSV(dataText);
 
@@ -224,23 +222,19 @@
         contenedor.innerHTML = '';
 
         productos.forEach(p => {
-          const nombre = p.productos || p.producto || p.articulo || '';
+          // Detectar el nombre limpìo
+          let nombre = (p.productos || p.producto || p.articulo || '').replace(/[🗹\r\n]/g, '').trim();
           
-          // Ignorar filas de totales o vacías
           if (!nombre || nombre.toLowerCase().includes('total de') || nombre.toLowerCase().includes('monto total')) {
             return;
           }
 
           const desc = p.descripcion || '';
-          const precioRaw = p.precios || p.precio || '0';
+          let precioRaw = (p.precios || p.precio || '0').replace(/[^0-9.,]/g, '');
           const estaDisponible = (p.disponible || 'si').toLowerCase().includes('si');
           const imgUrl = obtenerUrlImagen(p.imagenes || p.imagen || p.foto);
 
-          // Formatear precio
-          let precioFormatted = precioRaw;
-          if (!precioFormatted.includes('$')) {
-            precioFormatted = '$' + precioFormatted;
-          }
+          const precioFormatted = precioRaw ? '$' + precioRaw : '$0';
 
           const card = document.createElement('div');
           card.className = 'card';
@@ -271,7 +265,7 @@
 
       } catch (err) {
         console.error(err);
-        loader.innerText = "Error cargando la lista. Verifica que el CSV esté publicado.";
+        loader.innerText = "Error cargando la lista. Verifica la publicación del CSV.";
       }
     }
 
