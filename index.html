@@ -35,7 +35,6 @@
       padding: 12px;
     }
 
-    /* Grilla responsiva de 2 columnas para celulares */
     .catalog-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -93,12 +92,6 @@
       overflow: hidden;
     }
 
-    .card-desc {
-      font-size: 0.75rem;
-      color: var(--text-sub);
-      margin-bottom: 8px;
-    }
-
     .card-price {
       font-size: 1.05rem;
       font-weight: 700;
@@ -153,9 +146,9 @@
 
   <script>
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrk4syopqM0OsDN6yXMRH2c67rINhlf8H4jXXXqFcq1z7Fb5dX8XdxJKKKP6aKZX5X8Cjo9BpkhMJ0/pub?output=csv";
-    const NUMERO_WA = "5491172680871"; // <--- Coloca tu número de WhatsApp aquí
+    const NUMERO_WA = "5491112345678"; // <--- NO OLVIDES PONER TU NÚMERO DE WHATSAPP AQUÍ
 
-    // Convertidor de links de Google Drive a URLs de imagen visibles
+    // Transforma enlaces de Google Drive a imágenes nativas
     function obtenerUrlImagen(url) {
       if (!url) return '';
       url = url.trim();
@@ -168,45 +161,42 @@
       return url;
     }
 
-    // Parser CSV avanzado
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length < 2) return [];
+    // Lector CSV Avanzado para leer saltos de línea dentro de la misma celda
+    function parseCSVData(text) {
+      const rows = [];
+      let currentRow = [];
+      let currentCell = '';
+      let inQuotes = false;
 
-      const parseRow = (rowText) => {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        for (let i = 0; i < rowText.length; i++) {
-          const char = rowText[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            result.push(current.trim().replace(/^"|"$/g, ''));
-            current = '';
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        const next = text[i+1];
+
+        if (c === '"') {
+          if (inQuotes && next === '"') {
+            currentCell += '"';
+            i++; 
           } else {
-            current += char;
+            inQuotes = !inQuotes;
           }
+        } else if (c === ',' && !inQuotes) {
+          currentRow.push(currentCell);
+          currentCell = '';
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (c === '\r' && next === '\n') i++; 
+          currentRow.push(currentCell);
+          rows.push(currentRow);
+          currentRow = [];
+          currentCell = '';
+        } else {
+          currentCell += c;
         }
-        result.push(current.trim().replace(/^"|"$/g, ''));
-        return result;
-      };
-
-      const headers = parseRow(lines[0]).map(h => 
-        h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
-      );
-
-      const items = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        const values = parseRow(lines[i]);
-        let item = {};
-        headers.forEach((h, idx) => {
-          item[h] = values[idx] || '';
-        });
-        items.push(item);
       }
-      return items;
+      if (currentCell !== '' || currentRow.length > 0) {
+        currentRow.push(currentCell);
+        rows.push(currentRow);
+      }
+      return rows;
     }
 
     async function cargarCatalogo() {
@@ -215,33 +205,67 @@
 
       try {
         const res = await fetch(URL_CSV + '&nocache=' + Date.now());
-        const dataText = await res.text();
-        const productos = parseCSV(dataText);
+        const text = await res.text();
+        const rows = parseCSVData(text);
+
+        if (rows.length < 2) {
+          loader.innerText = "No se encontraron datos en la planilla.";
+          return;
+        }
+
+        const excelRows = rows.slice(1); // Omitir la fila 1 de cabeceras
+        let productList = [];
+
+        // 1. Extraer los productos de la Columna A (soporta tu formato de Alt+Enter)
+        for (let i = 0; i < excelRows.length; i++) {
+          let colA = excelRows[i][0] || '';
+          // Separa la celda si escribiste varios productos hacia abajo
+          let lines = colA.split(/\r?\n/).map(p => p.trim());
+          for (let line of lines) {
+            if (line !== '' && !line.toLowerCase().includes('total') && !line.toLowerCase().includes('monto')) {
+              productList.push({ nameRaw: line });
+            }
+          }
+        }
 
         loader.style.display = 'none';
         contenedor.innerHTML = '';
 
-        productos.forEach(p => {
-          // Detectar el nombre limpìo
-          let nombre = (p.productos || p.producto || p.articulo || '').replace(/[🗹\r\n]/g, '').trim();
+        // 2. Emparejar cada producto con las otras columnas
+        productList.forEach((prod, index) => {
+          let rawText = prod.nameRaw;
           
-          if (!nombre || nombre.toLowerCase().includes('total de') || nombre.toLowerCase().includes('monto total')) {
-            return;
+          // Limpiar la viñeta "🗹" o guiones del Excel
+          let nameClean = rawText.replace(/^[🗹☑\-]+/, '').trim();
+          
+          // Extraer precio
+          const matchPrecio = nameClean.match(/\$?(\d{1,3}(?:\.\d{3})+|\d+)/);
+          let precio = "0";
+          let nombre = nameClean;
+
+          if (matchPrecio) {
+            precio = matchPrecio[0];
+            nombre = nameClean.replace(matchPrecio[0], '').replace(/[-–$]/g, '').trim();
           }
 
-          const desc = p.descripcion || '';
-          let precioRaw = (p.precios || p.precio || '0').replace(/[^0-9.,]/g, '');
-          const estaDisponible = (p.disponible || 'si').toLowerCase().includes('si');
-          const imgUrl = obtenerUrlImagen(p.imagenes || p.imagen || p.foto);
+          // Respetar Disponibilidad (Busca el "Si" o "No" en la Columna D)
+          let dispRaw = excelRows[index] && excelRows[index][3] ? excelRows[index][3].trim().toLowerCase() : '';
+          let estaDisponible = (dispRaw === 'si' || dispRaw === 'sí');
 
-          const precioFormatted = precioRaw ? '$' + precioRaw : '$0';
+          // Buscar Imagen en la Columna E
+          let imgRaw = excelRows[index] && excelRows[index][4] ? excelRows[index][4].trim() : '';
+          let imgUrl = obtenerUrlImagen(imgRaw);
+
+          let precioFormatted = precio;
+          if (!precioFormatted.includes('$')) {
+            precioFormatted = '$' + precioFormatted;
+          }
 
           const card = document.createElement('div');
           card.className = 'card';
 
           const msjWa = encodeURIComponent(`Hola, quisiera pedir: ${nombre} (${precioFormatted})`);
           const linkWa = `https://wa.me/${NUMERO_WA}?text=${msjWa}`;
-
           const fotoFallback = 'https://via.placeholder.com/200x150?text=Sin+Foto';
 
           card.innerHTML = `
@@ -250,12 +274,11 @@
             </div>
             <div class="card-body">
               <div class="card-title">${nombre}</div>
-              ${desc ? `<div class="card-desc">${desc}</div>` : ''}
               <div class="card-price">${precioFormatted}</div>
               ${
                 estaDisponible 
                 ? `<a href="${linkWa}" target="_blank" class="btn-wa">Pedir por WA</a>`
-                : `<button class="btn-wa btn-disabled" disabled>Agotado</button>`
+                : `<button class="btn-wa btn-disabled" disabled>Sin Stock</button>`
               }
             </div>
           `;
